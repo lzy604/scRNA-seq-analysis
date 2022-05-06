@@ -113,10 +113,19 @@ mamba create -n MAESTRO maestro=1.5.1 -c liulab-dfci
 # Activate the environment
 conda activate MAESTRO
 
+# Download index files for GRCh38
+mkdir MAESTRO/references
+cd MAESTRO/references/
+wget http://cistrome.org/~galib/MAESTRO/references/scRNA/Refdata_scRNA_MAESTRO_GRCh38_1.2.2.tar.gz
+tar xvzf Refdata_scRNA_MAESTRO_GRCh38_1.2.2.tar.gz
 
 # Build index for chromap. Only take a few minutes.
 chromap -i -r Refdata_scATAC_MAESTRO_GRCh38_1.1.0/GRCh38_genome.fa -o GRCh38_chromap.index
 
+```
+
+### Example for 10x scRNA-seq analysis
+```
 # Before running MAESTRO, users need to activate the MAESTRO environment.
 conda activate MAESTRO
 
@@ -138,12 +147,5 @@ MAESTRO samples-init --assay_type scrna --platform 10x-genomics --data_typ fastq
 # Run snakemake pipeline
 snakemake -np
 nohup snakemake -j 16 > run.out &
-
-```
-
-### Example for 10x scRNA-seq analysis
-```
-$ wget https://cf.10xgenomics.com/samples/cell-exp/3.0.0/pbmc_1k_v3/pbmc_1k_v3_fastqs.tar
-$ tar xvf pbmc_1k_v3_fastqs.tar
 ```
     
