@@ -22,18 +22,43 @@ cellranger
 ```
 #### Running cellranger mkfastq(bcl2fastq2)
 ```bash
+#rawdata download
 wget https://cf.10xgenomics.com/supp/cell-exp/cellranger-tiny-bcl-1.2.0.tar.gz
 wget https://cf.10xgenomics.com/supp/cell-exp/cellranger-tiny-bcl-simple-1.2.0.csv
 tar -zxvf cellranger-tiny-bcl-1.2.0.tar.gz
 path=$(dirname cellranger-tiny-bcl-simple-1.2.0.csv)
+#mkfastq
 cellranger mkfastq --id=project_name \
   --run=$path/cellranger-tiny-bcl-1.2.0 \
   --csv=$path/cellranger-tiny-bcl-simple-1.2.0.csv
 ```
+fastqfiles are in the project_name/outs/fastq_path
+#### Running cellranger count(aligns sequencing reads)
+```
+#reference transcriptome
+wget https://cf.10xgenomics.com/supp/cell-exp/refdata-cellranger-GRCh38-3.0.0.tar.gz
+tar -zxvf refdata-cellranger-GRCh38-3.0.0.tar.gz
+refpath=$(dirname refdata-cellranger-GRCh38-3.0.0)
+#fastq files download
+wget https://cf.10xgenomics.com/samples/cell-exp/3.0.0/pbmc_1k_v3/pbmc_1k_v3_fastqs.tar
+tar -xvf pbmc_1k_v3_fastqs.tar
+fastq_path=$(dirname pbmc_1k_v3_fastqs)
+#count
+cellranger count --id=project_ \
+--fastqs= $fastq_path/pbmc_1k_v3_fastqs \
+--sample=pbmc_1k_v3 \
+--transcriptome= $refpath/refdata-cellranger-GRCh38-3.0.0
+```
+Outputs are in the pipestance directory in the outs folder.
+
+
 
 
 ### [Seurat](https://satijalab.org/seurat/index.html)
+To install Seurat, R version 4.0 or greater is required. 
+```R
 
+```
 
 ## Running the pepline by MAESTRO
 ### Installation
