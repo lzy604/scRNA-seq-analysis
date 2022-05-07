@@ -1,25 +1,12 @@
 ## scRNA-seq-analysis(10x Genomics)
 
 This pipeline performs the following tasks:
-- Create an isolated environment for scRNA-seq-analysis
-- Intallation and Reference Genomes
-- Quality control on FastQ files ([FastQC](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
-- Adapter Trim([Trim Galore](https://www.bioinformatics.babraham.ac.uk/projects/trim_galore/)) 
-- Alignment([STAR](https://github.com/alexdobin/STAR))
-- QC reports for RNA-seq([RSeQC](http://rseqc.sourceforge.net))
-- Quantifying gene expression([HTSeq-count](https://github.com/htseq/htseq))
-- RPKMs and TPM (using edgeR or [StringTie](https://ccb.jhu.edu/software/stringtie/))
-- Differential expression analysis for standard designs ([DESeq2](https://bioconductor.org/packages/release/bioc/html/DESeq2.html))
-- Visualization(R)
+- Align reads, generate feature-barcode matrices ([Cell Ranger](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/using/tutorials))
+- QC, analysis, and exploration([Seurat](https://satijalab.org/seurat/index.html)) 
 - Running the pepline by MAESTRO
 
-## RNA-seq Data Standards
-1. A bulk RNA-seq experiment is an RNA-seq assay in which the average library insert size is 200 base pairs.
-2. Experiments should have two or more replicates. Assays performed using EN-TEx samples may be exempted due to limited availability of experimental material.
-3. Each replicate should have 30 million aligned reads, although older projects aimed for 20 million reads. Best practices for ENCODE2 RNA-seq experiments have been outlined here.
-4. Replicate concordance: the gene level quantification should have a Spearman correlation of >0.9 between isogenic replicates and >0.8 between anisogenic replicates (i.e. replicates from different donors).
 
-## System requirements
+### System requirements
 - Linux/Unix
 - Python
 - R 
