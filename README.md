@@ -8,84 +8,35 @@ This pipeline performs the following tasks:
 
 ### System requirements
 - Linux/Unix
-- Python
 - R 
 
 
-## Installation
-We uses the Miniconda3 package management system to harmonize all of the software packages. 
-Use the following commands to install Minicoda3：
-``` bash
-wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
-bash Miniconda3-latest-Linux-x86_64.sh
-```
-#### Create an isolated environment for RNA-seq
-``` bash
-conda create -n rna-seq
-conda activate rna-seq
-``` 
-
-#### Install tools
-Tools needed for this analysis are: R, samtools, FastQC, Trim Galore, STAR, RSeQC, stringtie, gffcompare, htseq-count. 
-``` bash
-conda config --add channels bioconda
-conda config --add channels conda-forge
-conda install -c r r 
-conda install -c bioconda samtools
-conda install -c bioconda fastqc
-conda install trim-galore
-conda install STAR
-conda install -c bioconda rseqc 
-conda install -c bioconda htseq
-conda install -c bioconda bioconductor-deseq2
-conda install -c bioconda stringtie 
-```
-
-#### Genome files
-Obtain a reference genome from Ensembl, iGenomes, NCBI or UCSC. In this example analysis we will use the mouse mm10 version of the genome from UCSC.
+### [Cell Ranger](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/using/tutorials)
+#### Installation
 ```bash
-mkdir anno
-cd anno
-mkdir mm10
-cd mm10
-wget ftp://igenome:G3nom3s4u@ussd-ftp.illumina.com/Mus_musculus/UCSC/mm10/Mus_musculus_UCSC_mm10.tar.gz
-
+wget -O cellranger-6.1.2.tar.gz "https://cf.10xgenomics.com/releases/cell-exp/cellranger-6.1.2.tar.gz?Expires=1641366506&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9jZi4xMHhnZW5vbWljcy5jb20vcmVsZWFzZXMvY2VsbC1leHAvY2VsbHJhbmdlci02LjEuMi50YXIuZ3oiLCJDb25kaXRpb24iOnsiRGF0ZUxlc3NUaGFuIjp7IkFXUzpFcG9jaFRpbWUiOjE2NDEzNjY1MDZ9fX1dfQ__&Signature=kaV8~ZabHhyDykUhbN~F78PDQfNZ64IamgsGc1nOSghFKPr0fbZ3WJk-2eWYh7IEt-KupenYP89W1zHi4lrxF~ZBbuP4NTaKEAa-G6ILJoX-VdyFnktkXFYDHgzEJ8ABq-NM6RWn20WD3a9BITNHTIWPtxjM-NaXAuR5uc5PuAEgjSDaQ2QBAQr~1q4aSM-~vJt~ia5e8acTz9RlM24EluLqfO59VCtAorP-5iJRwvLw9DjfrTlDtWfy3M2LSXp5OGmVJH1WUQReLK~0iZX2e8~vrHlAYpuxMa0Lgil6oHQ5s6vc~Dod3Aqpjb9sM~wuVo80zi4EqJ5nq0LU8SNbiQ__&Key-Pair-Id=APKAI7S6A5RYOXBWRPDA"
+tar -zxvf cellranger-6.1.2.tar.gz
+path=$(dirname cellranger-6.1.2)
+export PATH=$path/cellranger-6.1.2:$PATH
+cellranger
 ```
-
-Generate genome indexes files for STAR mapping
+#### Running cellranger mkfastq(bcl2fastq2)
 ```bash
-tar zxvf Mus_musculus_UCSC_mm10.tar.gz
-STAR --runThreadN 30 --runMode genomeGenerate --genomeDir star_index_mm10 --genomeFastaFiles /Sequence/WholeGenomeFasta/genome.fa --sjdbGTFfile /Annotation/Archives/archive-current/Genes/genes.gtf 
-```
-#### Download the public data
-
-```
-for ((i = 12;i<=15;i++)); #
-do
-fastq-dump --split-3 -O data/ SRR0020$i.sra.sra 
-done
+wget https://cf.10xgenomics.com/supp/cell-exp/cellranger-tiny-bcl-1.2.0.tar.gz
+wget https://cf.10xgenomics.com/supp/cell-exp/cellranger-tiny-bcl-simple-1.2.0.csv
+tar -zxvf cellranger-tiny-bcl-1.2.0.tar.gz
+path=$(dirname cellranger-tiny-bcl-simple-1.2.0.csv)
+cellranger mkfastq --id=project_name \
+  --run=$path/cellranger-tiny-bcl-1.2.0 \
+  --csv=$path/cellranger-tiny-bcl-simple-1.2.0.csv
 ```
 
-## Quality control on FastQ files 
-FastQC aims to provide a simple way to do some quality control checks on raw sequence data coming from high throughput sequencing pipelines. 
 
-run FastQC interactively or using ht CLI, which offers the following options:
-```bash
-fastqc seqfile1 seqfile2 .. seqfileN
-```
-
-## Adapter Trim[OPTIONAL]
-Use trim_glore to trim sequence adapter from the read FASTQ files.
-```bash
-trim_galore -q 20 --phred33 --stringency 3 --length 20 -e 0.1 \
-            --paired $dir/cmp/01raw_data/$fq1 $dir/cmp/01raw_data/$fq2  \
-            --gzip -o $input_data
-```
-
+### [Seurat](https://satijalab.org/seurat/index.html)
 
 
 ## Running the pepline by MAESTRO
-### installation
+### Installation
 ```
 #MAESTRO uses the Miniconda3 package management system to harmonize all of the software packages. 
 wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
