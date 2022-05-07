@@ -20,6 +20,7 @@ path=$(dirname cellranger-6.1.2)
 export PATH=$path/cellranger-6.1.2:$PATH
 cellranger
 ```
+
 #### Running cellranger mkfastq(bcl2fastq2)
 ```bash
 #rawdata download
@@ -33,6 +34,7 @@ cellranger mkfastq --id=project_name \
   --csv=$path/cellranger-tiny-bcl-simple-1.2.0.csv
 ```
 fastqfiles are in the project_name/outs/fastq_path
+
 #### Running cellranger count(aligns sequencing reads)
 ```bash
 #reference transcriptome
@@ -69,7 +71,6 @@ tar -zxvf pbmc3k_filtered_gene_bc_matrices.tar.gz
 ```
 Opean R
 ```
-
 library(dplyr)
 library(Seurat)
 library(patchwork)
@@ -81,6 +82,7 @@ pbmc.data <- Read10X(data.dir = "../data/pbmc3k/filtered_gene_bc_matrices/hg19/"
 pbmc <- CreateSeuratObject(counts = pbmc.data, project = "pbmc3k", min.cells = 3, min.features = 200)
 pbmc
 ```
+
 #### QC and selecting cells for further analysis
 ```R
 # The [[ operator can add columns to object metadata. This is a great place to stash QC stats
@@ -101,9 +103,16 @@ plot1 + plot2
 # Filter cells that have unique feature counts over 2,500 or less than 200;have >5% mitochondrial counts
 pbmc <- subset(pbmc, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5)
 ```
+#### Normalizing the data
+After removing unwanted cells from the dataset, the next step is to normalize the data. By default, we employ a global-scaling normalization method “LogNormalize” that normalizes the feature expression measurements for each cell by the total expression, multiplies this by a scale factor (10,000 by default), and log-transforms the result. Normalized values are stored in pbmc[["RNA"]]@data.
+```
+pbmc <- NormalizeData(pbmc, normalization.method = "LogNormalize", scale.factor = 10000)
+```
 
 #### Identification of highly variable features (feature selection)
+We next calculate a subset of features that exhibit high cell-to-cell variation in the dataset (i.e, they are highly expressed in some cells, and lowly expressed in others). We and others have found that focusing on these genes in downstream analysis helps to highlight biological signal in single-cell datasets.
 ```
+# Identification of highly variable features (feature selection)
 pbmc <- FindVariableFeatures(pbmc, selection.method = "vst", nfeatures = 2000)
 
 # Identify the 10 most highly variable genes
@@ -116,12 +125,91 @@ plot1 + plot2
 ```
 
 #### Scaling the data
+Next, we apply a linear transformation (‘scaling’) that is a standard pre-processing step prior to dimensional reduction techniques like PCA. The ScaleData() function:
+```
+all.genes <- rownames(pbmc)
+pbmc <- ScaleData(pbmc, features = all.genes)
 ```
 
-``
+###  Perform linear dimensional reduction
+Next we perform PCA on the scaled data. By default, only the previously determined variable features are used as input, but can be defined using features argument if you wish to choose a different subset.
+```
+pbmc <- RunPCA(pbmc, features = VariableFeatures(object = pbmc))
+# Examine and visualize PCA results a few different ways
+print(pbmc[["pca"]], dims = 1:5, nfeatures = 5)
+VizDimLoadings(pbmc, dims = 1:2, reduction = "pca")
+DimPlot(pbmc, reduction = "pca")
+DimHeatmap(pbmc, dims = 1, cells = 500, balanced = TRUE)
+DimHeatmap(pbmc, dims = 1:15, cells = 500, balanced = TRUE)
+```
 
+### Determine the ‘dimensionality’ of the dataset
+To overcome the extensive technical noise in any single feature for scRNA-seq data, Seurat clusters cells based on their PCA scores, with each PC essentially representing a ‘metafeature’ that combines information across a correlated feature set. The top principal components therefore represent a robust compression of the dataset.We identify ‘significant’ PCs as those who have a strong enrichment of low p-value features.
+```
+pbmc <- JackStraw(pbmc, num.replicate = 100)
+pbmc <- ScoreJackStraw(pbmc, dims = 1:20)
+# Visualization of the distribution of p-values for each PC
+JackStrawPlot(pbmc, dims = 1:15)
+# Ranking of principle components based on the percentage of variance explained by each one 
+ElbowPlot(pbmc)
+```
 
+#### Cluster the cells
+To cluster the cells, we next apply modularity optimization techniques such as the Louvain algorithm (default) or SLM, to iteratively group cells together, with the goal of optimizing the standard modularity function. The FindClusters() function implements this procedure, and contains a resolution parameter that sets the ‘granularity’ of the downstream clustering, with increased values leading to a greater number of clusters.Optimal resolution often increases for larger datasets. The clusters can be found using the Idents() function.
+```
+pbmc <- FindNeighbors(pbmc, dims = 1:10)
+pbmc <- FindClusters(pbmc, resolution = 0.5)
+head(Idents(pbmc), 5)
+```
 
+#### Run non-linear dimensional reduction (UMAP/tSNE)
+Seurat offers several non-linear dimensional reduction techniques, such as tSNE and UMAP, to visualize and explore these datasets. 
+```
+# If you haven't installed UMAP, you can do so via reticulate::py_install(packages ='umap-learn')
+pbmc <- RunUMAP(pbmc, dims = 1:10)
+# note that you can set `label = TRUE` or use the LabelClusters function to help label
+# individual clusters
+DimPlot(pbmc, reduction = "umap")
+saveRDS(pbmc, file = "../output/pbmc_tutorial.rds")
+```
+
+#### Finding differentially expressed features (cluster biomarkers)
+Seurat can help you find markers that define clusters via differential expression. 
+```
+# find all markers of cluster 2
+cluster2.markers <- FindMarkers(pbmc, ident.1 = 2, min.pct = 0.25)
+head(cluster2.markers, n = 5)
+# find all markers distinguishing cluster 5 from clusters 0 and 3
+cluster5.markers <- FindMarkers(pbmc, ident.1 = 5, ident.2 = c(0, 3), min.pct = 0.25)
+head(cluster5.markers, n = 5)
+# find markers for every cluster compared to all remaining cells, report only the positive ones
+pbmc.markers <- FindAllMarkers(pbmc, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+pbmc.markers %>%
+  group_by(cluster) %>%
+  slice_max(n = 2, order_by = avg_log2FC)
+# the ROC test returns the ‘classification power’ for any individual marker
+cluster0.markers <- FindMarkers(pbmc, ident.1 = 0, logfc.threshold = 0.25, test.use = "roc", only.pos = TRUE)
+# visualizing marker expression
+VlnPlot(pbmc, features = c("MS4A1", "CD79A"))
+# you can plot raw counts as well
+VlnPlot(pbmc, features = c("NKG7", "PF4"), slot = "counts", log = TRUE)
+FeaturePlot(pbmc, features = c("MS4A1", "GNLY", "CD3E", "CD14", "FCER1A", "FCGR3A", "LYZ", "PPBP",
+                               "CD8A"))
+# expression heatmap for given cells and features. 
+pbmc.markers %>%
+  group_by(cluster) %>%
+  top_n(n = 10, wt = avg_log2FC) -> top10
+DoHeatmap(pbmc, features = top10$gene) + NoLegend()
+```
+#### Assigning cell type identity to clusters
+```
+new.cluster.ids <- c("Naive CD4 T", "CD14+ Mono", "Memory CD4 T", "B", "CD8 T", "FCGR3A+ Mono",
+                     "NK", "DC", "Platelet")
+names(new.cluster.ids) <- levels(pbmc)
+pbmc <- RenameIdents(pbmc, new.cluster.ids)
+DimPlot(pbmc, reduction = "umap", label = TRUE, pt.size = 0.5) + NoLegend()
+saveRDS(pbmc, file = "../output/pbmc3k_final.rds")
+```
 
 ## Running the pepline by MAESTRO
 ### Installation
