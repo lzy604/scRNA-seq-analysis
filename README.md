@@ -3,7 +3,7 @@
 This pipeline performs the following tasks:
 - Align reads, generate feature-barcode matrices ([Cell Ranger](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/using/tutorials))
 - QC, analysis, and exploration([Seurat](https://satijalab.org/seurat/index.html)) 
-- Running the pepline by MAESTRO
+- Running the pepline by [MAESTRO](https://github.com/liulab-dfci/MAESTRO)
 
 
 ### System requirements
@@ -20,7 +20,6 @@ path=$(dirname cellranger-6.1.2)
 export PATH=$path/cellranger-6.1.2:$PATH
 cellranger
 ```
-
 #### Running cellranger mkfastq(bcl2fastq2)
 ```bash
 #rawdata download
@@ -34,7 +33,6 @@ cellranger mkfastq --id=project_name \
   --csv=$path/cellranger-tiny-bcl-simple-1.2.0.csv
 ```
 fastqfiles are in the project_name/outs/fastq_path
-
 #### Running cellranger count(aligns sequencing reads)
 ```bash
 #reference transcriptome
@@ -82,7 +80,6 @@ pbmc.data <- Read10X(data.dir = "../data/pbmc3k/filtered_gene_bc_matrices/hg19/"
 pbmc <- CreateSeuratObject(counts = pbmc.data, project = "pbmc3k", min.cells = 3, min.features = 200)
 pbmc
 ```
-
 #### QC and selecting cells for further analysis
 ```R
 # The [[ operator can add columns to object metadata. This is a great place to stash QC stats
@@ -108,7 +105,6 @@ After removing unwanted cells from the dataset, the next step is to normalize th
 ```
 pbmc <- NormalizeData(pbmc, normalization.method = "LogNormalize", scale.factor = 10000)
 ```
-
 #### Identification of highly variable features (feature selection)
 We next calculate a subset of features that exhibit high cell-to-cell variation in the dataset (i.e, they are highly expressed in some cells, and lowly expressed in others). We and others have found that focusing on these genes in downstream analysis helps to highlight biological signal in single-cell datasets.
 ```
@@ -123,14 +119,12 @@ plot1 <- VariableFeaturePlot(pbmc)
 plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
 plot1 + plot2
 ```
-
 #### Scaling the data
 Next, we apply a linear transformation (‘scaling’) that is a standard pre-processing step prior to dimensional reduction techniques like PCA. The ScaleData() function:
 ```
 all.genes <- rownames(pbmc)
 pbmc <- ScaleData(pbmc, features = all.genes)
 ```
-
 ###  Perform linear dimensional reduction
 Next we perform PCA on the scaled data. By default, only the previously determined variable features are used as input, but can be defined using features argument if you wish to choose a different subset.
 ```
@@ -142,7 +136,6 @@ DimPlot(pbmc, reduction = "pca")
 DimHeatmap(pbmc, dims = 1, cells = 500, balanced = TRUE)
 DimHeatmap(pbmc, dims = 1:15, cells = 500, balanced = TRUE)
 ```
-
 ### Determine the ‘dimensionality’ of the dataset
 To overcome the extensive technical noise in any single feature for scRNA-seq data, Seurat clusters cells based on their PCA scores, with each PC essentially representing a ‘metafeature’ that combines information across a correlated feature set. The top principal components therefore represent a robust compression of the dataset.We identify ‘significant’ PCs as those who have a strong enrichment of low p-value features.
 ```
@@ -153,7 +146,6 @@ JackStrawPlot(pbmc, dims = 1:15)
 # Ranking of principle components based on the percentage of variance explained by each one 
 ElbowPlot(pbmc)
 ```
-
 #### Cluster the cells
 To cluster the cells, we next apply modularity optimization techniques such as the Louvain algorithm (default) or SLM, to iteratively group cells together, with the goal of optimizing the standard modularity function. The FindClusters() function implements this procedure, and contains a resolution parameter that sets the ‘granularity’ of the downstream clustering, with increased values leading to a greater number of clusters.Optimal resolution often increases for larger datasets. The clusters can be found using the Idents() function.
 ```
@@ -161,7 +153,6 @@ pbmc <- FindNeighbors(pbmc, dims = 1:10)
 pbmc <- FindClusters(pbmc, resolution = 0.5)
 head(Idents(pbmc), 5)
 ```
-
 #### Run non-linear dimensional reduction (UMAP/tSNE)
 Seurat offers several non-linear dimensional reduction techniques, such as tSNE and UMAP, to visualize and explore these datasets. 
 ```
@@ -172,7 +163,6 @@ pbmc <- RunUMAP(pbmc, dims = 1:10)
 DimPlot(pbmc, reduction = "umap")
 saveRDS(pbmc, file = "../output/pbmc_tutorial.rds")
 ```
-
 #### Finding differentially expressed features (cluster biomarkers)
 Seurat can help you find markers that define clusters via differential expression. 
 ```
@@ -210,9 +200,8 @@ pbmc <- RenameIdents(pbmc, new.cluster.ids)
 DimPlot(pbmc, reduction = "umap", label = TRUE, pt.size = 0.5) + NoLegend()
 saveRDS(pbmc, file = "../output/pbmc3k_final.rds")
 ```
-
-## Running the pepline by MAESTRO
-### Installation
+### [MAESTRO](https://github.com/liulab-dfci/MAESTRO)
+##### Installation
 ```
 #MAESTRO uses the Miniconda3 package management system to harmonize all of the software packages. 
 wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
@@ -237,8 +226,7 @@ tar xvzf Refdata_scRNA_MAESTRO_GRCh38_1.2.2.tar.gz
 chromap -i -r Refdata_scATAC_MAESTRO_GRCh38_1.1.0/GRCh38_genome.fa -o GRCh38_chromap.index
 
 ```
-
-### Example for 10x scRNA-seq analysis
+#### Example for 10x scRNA-seq analysis
 ```
 # Before running MAESTRO, users need to activate the MAESTRO environment.
 conda activate MAESTRO
